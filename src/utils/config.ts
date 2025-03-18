@@ -15,7 +15,8 @@ import {
   } from '@solana/web3.js';
   import bs58 from "bs58";
   
-  export const rpcUrl: string = 'https://mainnet.helius-rpc.com/?api-key=46738274-cac9-4e4b-9bbd-a77cc66b402e'
+  // export const rpcUrl: string = 'https://mainnet.helius-rpc.com/?api-key=46738274-cac9-4e4b-9bbd-a77cc66b402e'
+  export const rpcUrl: string = 'https://devnet.helius-rpc.com/?api-key=46738274-cac9-4e4b-9bbd-a77cc66b402e'
   export const rpcToken: string | undefined = undefined
 
   console.log(process.env.MY_WALLET_PRIVATE_KEY)

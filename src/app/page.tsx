@@ -1,7 +1,12 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import dynamic from 'next/dynamic';
+
+const WalletMultiButton = dynamic(
+  () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
+  { ssr: false }
+);
 import type { NextPage } from 'next';
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 
@@ -62,7 +67,7 @@ const CreateToken: NextPage = () => {
           <div className="max-w-md mx-auto">
             <div className="flex justify-between items-center gap-3">
               <h1 className="text-2xl font-semibold">Create Custom Token</h1>
-              <WalletMultiButton />
+              <WalletMultiButton onClick={(e)=>console.log("e : ",e)}  />
             </div>
             
             <div className="divide-y divide-gray-200">
