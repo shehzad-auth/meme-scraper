@@ -1,103 +1,155 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import type { NextPage } from 'next';
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 
-export default function Home() {
+import { test, fetchBalance, UserBalance } from './actions';
+import { connection } from "./utils/config"
+import { create } from 'domain';
+import { createSPLToken } from './utils/createToken';
+import { ammCreatePool } from './utils/poolConfig';
+
+const CreateToken: NextPage = () => {
+  const { publicKey, signTransaction, signAllTransactions, wallet } = useWallet();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [mintAddress, setMintAddress] = useState<string>('');
+  const [tokenName, setTokenName] = useState<string>('');
+  const [tokenSymbol, setTokenSymbol] = useState<string>('');
+  const [tokenDecimals, setTokenDecimals] = useState<number>(9);
+  const [initialSupply, setInitialSupply] = useState<number>(1000000);
+  const [metadataUri, setMetadataUri] = useState<string>('');
+
+  const handleCreateToken = async (): Promise<void> => {
+    test();
+    if (!publicKey || !signTransaction || !signAllTransactions) {
+      alert('Please connect your wallet first!');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const fun = async() => {
+        /*await UserBalance(publicKey?.toString() || "");
+        const spltoken = await createSPLToken()
+        console.log("SPLToken:", spltoken);
+        await fetchBalance();*/
+        /*
+  mint: 'CSrmCkkBx4awR4NAiYTfsxLDKbUMhw4Wzokxf49msehL',
+  tokenAccount: '2EgJpuPCAgWazA6XUMBVRs5TCUpPYN2WVoMzr7ghLXKW'*/
+        const mintAddr = "HfgN3Nz2NjsG4xjeKHNBGrJJkAE3zAdxsq2oMMdcnscD"
+        const tokenAccount = "BhaBN4J59JTdArXyW9Se8DtEHys2U8GQgpSXTPrtjmTz"
+
+        const res = await ammCreatePool()
+        console.log("🎉 Pool Successfully Created!", res);
+      }
+      fun()
+      
+    } catch (error) {
+      console.error('Error creating token:', error);
+      alert(`Error creating token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
+        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
+          <div className="max-w-md mx-auto">
+            <div className="flex justify-between items-center gap-3">
+              <h1 className="text-2xl font-semibold">Create Custom Token</h1>
+              <WalletMultiButton />
+            </div>
+            
+            <div className="divide-y divide-gray-200">
+              <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                <div className="flex flex-col">
+                  <label className="text-sm text-gray-600">Token Name</label>
+                  <input
+                    type="text"
+                    value={tokenName}
+                    onChange={(e) => setTokenName(e.target.value)}
+                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                    placeholder="My Custom Token"
+                  />
+                </div>
+                
+                <div className="flex flex-col">
+                  <label className="text-sm text-gray-600">Token Symbol</label>
+                  <input
+                    type="text"
+                    value={tokenSymbol}
+                    onChange={(e) => setTokenSymbol(e.target.value)}
+                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                    placeholder="MCT"
+                  />
+                </div>
+                
+                <div className="flex flex-col">
+                  <label className="text-sm text-gray-600">Decimals</label>
+                  <input
+                    type="number"
+                    value={tokenDecimals}
+                    onChange={(e) => setTokenDecimals(parseInt(e.target.value))}
+                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                    placeholder="9"
+                  />
+                </div>
+                
+                <div className="flex flex-col">
+                  <label className="text-sm text-gray-600">Initial Supply</label>
+                  <input
+                    type="number"
+                    value={initialSupply}
+                    onChange={(e) => setInitialSupply(parseInt(e.target.value))}
+                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                    placeholder="1000000"
+                  />
+                </div>
+                
+                <div className="flex flex-col">
+                  <label className="text-sm text-gray-600">Metadata URI (IPFS or other)</label>
+                  <input
+                    type="text"
+                    value={metadataUri}
+                    onChange={(e) => setMetadataUri(e.target.value)}
+                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                    placeholder="https://ipfs.io/ipfs/your-metadata-hash"
+                  />
+                </div>
+                
+                <div className="pt-4">
+                  <button
+                    onClick={handleCreateToken}
+                    disabled={loading || !publicKey}
+                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                  >
+                    {loading ? 'Creating...' : 'Create Token'}
+                  </button>
+                </div>
+                
+                {mintAddress && (
+                  <div className="mt-4 p-4 bg-green-100 rounded-md">
+                    <p className="text-sm text-green-800">
+                      Token created successfully! Mint address:
+                    </p>
+                    <p className="text-xs font-mono break-all">
+                      {mintAddress}
+                    </p>
+                  </div>
+                )}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
-}
+};
+
+export default CreateToken;
