@@ -1,13 +1,13 @@
 "use client"
 import { useState } from 'react';
-import { createToken, TokenCreationResult } from '../utils/tokens';
+import { createSPLToken } from '@/utils/createToken';
 
 const CreateTokenButton: React.FC = () => {
-  const [tokenCreationResult, setTokenCreationResult] = useState<TokenCreationResult | null>(null);
+  const [tokenCreationResult, setTokenCreationResult] = useState<any | null>(null);
 
   const handleCreateToken = async () => {
     try {
-      const result = await createToken();
+      const result = await createSPLToken();
       setTokenCreationResult(result);
     } catch (error) {
       console.error(error);

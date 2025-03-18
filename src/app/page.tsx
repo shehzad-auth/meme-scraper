@@ -5,11 +5,11 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import type { NextPage } from 'next';
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 
-import { test, fetchBalance, UserBalance } from './actions';
-import { connection } from "./utils/config"
+import { test, fetchBalance, UserBalance } from './action';
+import { connection } from "@/utils/config"
 import { create } from 'domain';
-import { createSPLToken } from './utils/createToken';
-import { ammCreatePool } from './utils/poolConfig';
+import { createSPLToken } from '@/utils/createToken';
+import { ammCreatePool } from '@/utils/poolConfig';
 
 const CreateToken: NextPage = () => {
   const { publicKey, signTransaction, signAllTransactions, wallet } = useWallet();

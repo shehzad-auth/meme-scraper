@@ -1,7 +1,7 @@
 "use server"
 import { PublicKey } from '@solana/web3.js';
-import { connection, wallet } from './utils/config';
-import { createSPLToken } from './utils/createToken';
+import { connection, wallet } from '@/utils/config';
+import { createSPLToken } from '@/utils/createToken';
 
 export async function test() {
     // createSPLToken().then(res => {
