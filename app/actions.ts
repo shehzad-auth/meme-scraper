@@ -1,6 +1,6 @@
 "use server"
 import { PublicKey } from '@solana/web3.js';
-import { connection, wallet } from './utils/config';
+import { connection, owner } from './utils/config';
 import { createSPLToken } from './utils/createToken';
 
 export async function test() {
@@ -11,7 +11,7 @@ export async function test() {
 
 export const fetchBalance = async () => {
     try {
-      const balance = await connection.getBalance(new PublicKey(wallet.publicKey || ""));
+      const balance = await connection.getBalance(new PublicKey(owner.publicKey || ""));
       console.log("---> Balance:", balance / 1e9, "SOL"); // Convert from lamports to SOL
     } catch (error) {
       console.error("Error fetching balance:", error);

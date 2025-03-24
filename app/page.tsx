@@ -10,6 +10,8 @@ import { connection } from "./utils/config"
 import { create } from 'domain';
 import { createSPLToken } from './utils/createToken';
 import { ammCreatePool } from './utils/poolConfig';
+import { createMarket } from './utils/createMarket';
+import { createAmmPool } from './utils/createAMMPool';
 
 const CreateToken: NextPage = () => {
   const { publicKey, signTransaction, signAllTransactions, wallet } = useWallet();
@@ -31,18 +33,16 @@ const CreateToken: NextPage = () => {
     setLoading(true);
     try {
       const fun = async() => {
-        /*await UserBalance(publicKey?.toString() || "");
+        // await UserBalance(publicKey?.toString() || "");
         const spltoken = await createSPLToken()
         console.log("SPLToken:", spltoken);
-        await fetchBalance();*/
-        /*
-  mint: 'CSrmCkkBx4awR4NAiYTfsxLDKbUMhw4Wzokxf49msehL',
-  tokenAccount: '2EgJpuPCAgWazA6XUMBVRs5TCUpPYN2WVoMzr7ghLXKW'*/
-        const mintAddr = "HfgN3Nz2NjsG4xjeKHNBGrJJkAE3zAdxsq2oMMdcnscD"
-        const tokenAccount = "BhaBN4J59JTdArXyW9Se8DtEHys2U8GQgpSXTPrtjmTz"
+        // await fetchBalance();
+        // const mintAddr = "HfgN3Nz2NjsG4xjeKHNBGrJJkAE3zAdxsq2oMMdcnscD"
+        // const tokenAccount = "BhaBN4J59JTdArXyW9Se8DtEHys2U8GQgpSXTPrtjmTz"
 
-        const res = await ammCreatePool()
-        console.log("🎉 Pool Successfully Created!", res);
+        // const marketRes = "GvpZL2kByLWGHEc8hr8zKssKhBsDxek2okfMV89FRCdn"//await createMarket(spltoken.mint)
+        // const res = await createAmmPool("", marketRes)
+        // console.log("🎉 Pool Successfully Created!", res);
       }
       fun()
       

@@ -11,6 +11,7 @@ import {
     Keypair,
     PublicKey,
     SendOptions,
+    SendTransactionError,
     Signer,
     Transaction,
     VersionedTransaction,
@@ -29,16 +30,25 @@ import {
     txs: (VersionedTransaction | Transaction)[],
     options?: SendOptions
   ): Promise<string[]> {
-    const txids: string[] = [];
-    for (const iTx of txs) {
-      if (iTx instanceof VersionedTransaction) {
-        iTx.sign([payer]);
-        txids.push(await connection.sendTransaction(iTx, options));
-      } else {
-        txids.push(await connection.sendTransaction(iTx, [payer], options));
+    try {
+      const txids: string[] = [];
+      for (const iTx of txs) {
+        if (iTx instanceof VersionedTransaction) {
+          iTx.sign([payer]);
+          txids.push(await connection.sendTransaction(iTx, options));
+        } else {
+          txids.push(await connection.sendTransaction(iTx, [payer], options));
+        }
       }
+      return txids;
+    } catch (error) {
+      if (error instanceof SendTransactionError) {
+        console.error('SendTransactionError:', error.getLogs(connection));
+      } else {
+        console.error('Error sending transaction:', error);
+      }
+      throw error;
     }
-    return txids;
   }
   
   export async function getWalletTokenAccount(connection: Connection, wallet: PublicKey): Promise<TokenAccount[]> {
@@ -59,6 +69,24 @@ import {
       payer: wallet.publicKey,
       innerTransactions: innerSimpleV0Transaction,
       addLookupTableInfo: addLookupTableInfo,
+    })
+  
+    return await sendTx(connection, wallet, willSendTx, options)
+  }
+
+  export async function buildAndSendTxLookUp(innerSimpleV0Transaction: InnerSimpleV0Transaction[], options?: SendOptions, addLookupTableAddress?: string) {
+    const lookupTableAddress = new PublicKey(addLookupTableAddress || "");
+    const lookupTableAccount = (
+      await connection.getAddressLookupTable(lookupTableAddress)
+    ).value; // add this line
+    const willSendTx = await buildSimpleTransaction({
+      connection,
+      makeTxVersion,
+      payer: wallet.publicKey,
+      innerTransactions: innerSimpleV0Transaction,
+      addLookupTableInfo: {
+        addLookupTableAddress: lookupTableAccount!
+      }, // modify this line,
     })
   
     return await sendTx(connection, wallet, willSendTx, options)
