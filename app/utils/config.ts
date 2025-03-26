@@ -81,7 +81,7 @@
   import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
   import bs58 from 'bs58'
   
-  export const cluster = 'devnet' // 'mainnet' | 'devnet'
+  export const cluster: 'mainnet' | 'devnet' = 'devnet'
   
   let rpcUrl
   if (cluster == "devnet") {
@@ -93,7 +93,8 @@
   export const rpcToken: string | undefined = undefined
   export const connection = new Connection(rpcUrl, 'confirmed'); 
 
-  export const owner: Keypair = Keypair.fromSecretKey(bs58.decode("5oQF1ezb1yGSs3FVYQuMmLiww8oH1sjX8K8rdg7WTR9sSaRL2YpjZGyu89zLBe6p9d613BpM6ZNSJxLGnkr2TDaS"))
+  // export const owner: Keypair = Keypair.fromSecretKey(bs58.decode("5oQF1ezb1yGSs3FVYQuMmLiww8oH1sjX8K8rdg7WTR9sSaRL2YpjZGyu89zLBe6p9d613BpM6ZNSJxLGnkr2TDaS"))
+  export const owner: Keypair = Keypair.fromSecretKey(bs58.decode("2LnYGB9dyz8EVySTdoVmpB7QWBY15KX2e4iGY6X6YWZoxek4pKCYygBnNGqzaQW32DtSxCRTd78MnPkRqj1Cy9vG"))
   export const txVersion = TxVersion.LEGACY// TxVersion.V0 // or TxVersion.LEGACY
 
   

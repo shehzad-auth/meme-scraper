@@ -1,157 +1,146 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import dynamic from 'next/dynamic';
-
+import { useState } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import dynamic from "next/dynamic";
 const WalletMultiButton = dynamic(
-  () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
+  () =>
+    import("@solana/wallet-adapter-react-ui").then(
+      (mod) => mod.WalletMultiButton
+    ),
   { ssr: false }
 );
-import type { NextPage } from 'next';
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-
-import { test, fetchBalance, UserBalance } from './actions';
-import { connection } from "./utils/config"
-import { create } from 'domain';
-import { createSPLToken } from './utils/createToken';
-import { ammCreatePool } from './utils/poolConfig';
-import { createMarket } from './utils/createMarket';
-import { createAmmPool } from './utils/createAMMPool';
+import type { NextPage } from "next";
+import { swap } from "./actions";
+import { createSPLToken } from "./utils/createToken";
+import { createMarket } from "./utils/createMarket";
+import { createAmmPool } from "./utils/createAMMPool";
+import { getTempWallet, transferAmount } from "./utils/functions";
 
 const CreateToken: NextPage = () => {
-  const { publicKey, signTransaction, signAllTransactions, wallet } = useWallet();
-  const [loading, setLoading] = useState<boolean>(false);
-  const [mintAddress, setMintAddress] = useState<string>('');
-  const [tokenName, setTokenName] = useState<string>('');
-  const [tokenSymbol, setTokenSymbol] = useState<string>('');
-  const [tokenDecimals, setTokenDecimals] = useState<number>(9);
-  const [initialSupply, setInitialSupply] = useState<number>(1000000);
-  const [metadataUri, setMetadataUri] = useState<string>('');
+  const { publicKey, signAllTransactions } =
+    useWallet();
+  const [textLogs, setTextLogs] = useState<string[]>([]);
+  const [amount, setAmount] = useState<number>(0);
 
-  const handleCreateToken = async (): Promise<void> => {
-    test();
-    if (!publicKey || !signTransaction || !signAllTransactions) {
-      alert('Please connect your wallet first!');
-      return;
-    }
+  const handleSwap = async () => {
+    console.log("swap result : ", await swap());
+  };
 
-    setLoading(true);
-    try {
-      const fun = async() => {
-        // await UserBalance(publicKey?.toString() || "");
-        const spltoken = await createSPLToken()
-        console.log("SPLToken:", spltoken);
-        // await fetchBalance();
-        // const mintAddr = "HfgN3Nz2NjsG4xjeKHNBGrJJkAE3zAdxsq2oMMdcnscD"
-        // const tokenAccount = "BhaBN4J59JTdArXyW9Se8DtEHys2U8GQgpSXTPrtjmTz"
+  const log = (text: string) => {
+    setTextLogs((prev) => [...prev, text]);
+    console.log(text);
+  }
 
-        // const marketRes = "GvpZL2kByLWGHEc8hr8zKssKhBsDxek2okfMV89FRCdn"//await createMarket(spltoken.mint)
-        // const res = await createAmmPool("", marketRes)
-        // console.log("🎉 Pool Successfully Created!", res);
+  const handleInvest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Steps
+    // 1. Create temp wallet
+    // 2. Transfer amount from user to temp wallet
+    // 3. create token from temp wallet
+    // 4. create market
+    // 5. create pool
+    // 6. check investment in pool using helius webhook
+    // 7. after certain amount of investment, collect total amount
+
+    try{
+      // 1. Create temp wallet
+      log("Creating Temp Wallet...")
+      const tempWallet = await getTempWallet();
+      log(`Created Temp Wallet: ${tempWallet.publicKey}`)
+  
+      // 2. Transfer amount from user to temp wallet
+      if(!publicKey || !signAllTransactions) {
+        log("Please connect your wallet first!")
+        return;
+      }else if(publicKey === tempWallet.publicKey) {
+        log("You cannot transfer amount to your own wallet!")
+        return;
+      }else if(amount <= 0) {
+        log("Amount must be greater than 0")
+        return;
       }
-      fun()
-      
-    } catch (error) {
-      console.error('Error creating token:', error);
-      alert(`Error creating token: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
+      log("Transferring amount from user to temp wallet...")
+      await transferAmount( publicKey!, tempWallet.publicKey, amount, signAllTransactions )
+      log(`Transferred amount from user to temp wallet: ${amount}`)
+
+      // 3. create token from temp wallet
+      log("Creating Token...")
+      const spltoken = await createSPLToken()
+      log(`Created Token: ${spltoken.mint}`)
+
+      // 4. create market
+      log("Creating Market...")
+      const marketRes = await createMarket(spltoken.mint)
+      log(`Created Market: ${marketRes}`)
+
+      // 5. create pool
+      log("Creating Pool...")
+      // const res = await createAmmPool(amount, marketRes)
+      // log(`Created Pool: ${res}`)
+
+      // 6. check investment in pool using helius webhook
+      // 7. after certain amount of investment, collect total amount
+
+    }catch(e){
+      log(`Error : ${e}`)
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
-          <div className="max-w-md mx-auto">
-            <div className="flex justify-between items-center gap-3">
-              <h1 className="text-2xl font-semibold">Create Custom Token</h1>
-              <WalletMultiButton />
-            </div>
-            
-            <div className="divide-y divide-gray-200">
-              <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                <div className="flex flex-col">
-                  <label className="text-sm text-gray-600">Token Name</label>
-                  <input
-                    type="text"
-                    value={tokenName}
-                    onChange={(e) => setTokenName(e.target.value)}
-                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                    placeholder="My Custom Token"
-                  />
-                </div>
-                
-                <div className="flex flex-col">
-                  <label className="text-sm text-gray-600">Token Symbol</label>
-                  <input
-                    type="text"
-                    value={tokenSymbol}
-                    onChange={(e) => setTokenSymbol(e.target.value)}
-                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                    placeholder="MCT"
-                  />
-                </div>
-                
-                <div className="flex flex-col">
-                  <label className="text-sm text-gray-600">Decimals</label>
-                  <input
-                    type="number"
-                    value={tokenDecimals}
-                    onChange={(e) => setTokenDecimals(parseInt(e.target.value))}
-                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                    placeholder="9"
-                  />
-                </div>
-                
-                <div className="flex flex-col">
-                  <label className="text-sm text-gray-600">Initial Supply</label>
-                  <input
-                    type="number"
-                    value={initialSupply}
-                    onChange={(e) => setInitialSupply(parseInt(e.target.value))}
-                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                    placeholder="1000000"
-                  />
-                </div>
-                
-                <div className="flex flex-col">
-                  <label className="text-sm text-gray-600">Metadata URI (IPFS or other)</label>
-                  <input
-                    type="text"
-                    value={metadataUri}
-                    onChange={(e) => setMetadataUri(e.target.value)}
-                    className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                    placeholder="https://ipfs.io/ipfs/your-metadata-hash"
-                  />
-                </div>
-                
-                <div className="pt-4">
-                  <button
-                    onClick={handleCreateToken}
-                    disabled={loading || !publicKey}
-                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-                  >
-                    {loading ? 'Creating...' : 'Create Token'}
-                  </button>
-                </div>
-                
-                {mintAddress && (
-                  <div className="mt-4 p-4 bg-green-100 rounded-md">
-                    <p className="text-sm text-green-800">
-                      Token created successfully! Mint address:
-                    </p>
-                    <p className="text-xs font-mono break-all">
-                      {mintAddress}
-                    </p>
-                  </div>
-                )}
-
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-100 py-2 flex flex-col justify-center items-center">
+      <WalletMultiButton
+        style={{ position: "fixed", top: "15px", right: "15px" }}
+      />
+      <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
+        <form className="flex justify-between items-end gap-2 w-full" onSubmit={handleInvest}>
+          <div className="flex flex-col">
+            <label className="text-sm text-gray-600">Amount</label>
+            <input
+              type="number"
+              value={amount || ""}
+              onChange={(e) => setAmount(e.target.valueAsNumber)}
+              className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+              placeholder="( SOL )"
+              required
+            />
           </div>
+          <button
+            type="submit"
+            className="w-full flex justify-center py-[10px] px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+          >
+            Invest
+          </button>
+        </form>
+        {/* <div className="flex justify-center items-center gap-4 mt-5 w-full">
+          <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
+            Token Number
+          </div>
+          <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
+            Total Users
+          </div>
+          <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
+            Total Coin
+          </div>
+        </div> */}
+        <div className="bg-black h-[30vh] w-full text-white mt-5 rounded-md p-4 overflow-auto">
+          {textLogs.length > 0 ? (
+            textLogs.map((log: any, index: any) => (
+              <div key={index} className=" border-gray-700 py-2 text-xs">
+                {log}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400 text-center mt-10">
+              No logs available
+            </div>
+          )}
         </div>
+        <button
+          onClick={handleInvest}
+          className="w-full flex justify-center mt-5 py-[10px] px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+        >
+          Withdraw
+        </button>
       </div>
     </div>
   );

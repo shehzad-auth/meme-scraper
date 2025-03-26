@@ -1,7 +1,9 @@
 "use server"
 import { PublicKey } from '@solana/web3.js';
 import { connection, owner } from './utils/config';
-import { createSPLToken } from './utils/createToken';
+import { Helius } from 'helius-sdk';
+
+const helius = new Helius('65fcc005-35d2-48ec-bef0-c5cc89bc5197');
 
 export async function test() {
     // createSPLToken().then(res => {
@@ -26,3 +28,24 @@ export const UserBalance = async (publicKey: string) => {
       console.error("Error fetching balance:", error);
     }
 };
+
+export const swap = async () => {
+  try {
+    const inputMint = 'So11111111111111111111111111111111111111112'; // SOL (devnet token)
+    const outputMint = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
+    // const outputMint = 'ENchkhrvTGbYhgXTnZPhdbL74k1uRJrGijLeUfyuNjgD'; // Your desired token
+    const amount = 1 * 10 ** 9; // 1 SOL in lamports
+
+    const result = await helius.rpc.executeJupiterSwap(
+      { inputMint, outputMint, amount},
+      owner
+    );
+
+    if (result) {
+      console.log(`Received ${result?.outputAmount} tokens, tx: ${result?.signature}`);
+    }
+    return result
+  }catch(e){
+    console.log("E : ",e)
+  }
+}
