@@ -1,6 +1,6 @@
 "use server"
 import { PublicKey } from '@solana/web3.js';
-import { connection, owner } from './utils/config';
+import { connection, initSdk, owner } from './utils/config';
 import { Helius } from 'helius-sdk';
 
 const helius = new Helius('65fcc005-35d2-48ec-bef0-c5cc89bc5197');
@@ -48,4 +48,20 @@ export const swap = async (from: string, to: string , a: number) => {
   }catch(e){
     console.log("Error in Swapping : ",e)
   }
+}
+
+export const fetchRpcPoolInfo = async (poolId: string) => {
+  console.log("Fetching Pool Info...");
+  const raydium = await initSdk()
+  // SOL-RAY
+  const pool1 = poolId
+  console.log("Pool ID:", pool1);
+
+  const res = await raydium.cpmm.getRpcPoolInfos([pool1])
+  console.log("RES : ",res);
+
+  const pool1Info = res[pool1]
+
+  console.log('SOL-RAY pool price:', pool1Info.poolPrice)
+  console.log('cpmm pool infos:', res)
 }
