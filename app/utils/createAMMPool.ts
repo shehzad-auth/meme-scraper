@@ -12,7 +12,7 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 
 export const createAmmPool = async (amount: number, MARKETID: any) => {
-  const PROGRAMID = cluster === "mainnet" ? AMM_V4 : DEVNET_PROGRAM_ID.AmmV4;
+  const PROGRAMID = cluster === "mainnet" ? AMM_V4 : DEVNET_PROGRAM_ID.CLMM;
   const MARKET_PROGRAMID =
     cluster === "mainnet"
       ? OPEN_BOOK_PROGRAM

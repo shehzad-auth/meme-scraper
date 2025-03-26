@@ -29,15 +29,15 @@ export const UserBalance = async (publicKey: string) => {
     }
 };
 
-export const swap = async () => {
+export const swap = async (from: string, to: string , a: number) => {
   try {
-    const inputMint = 'So11111111111111111111111111111111111111112'; // SOL (devnet token)
-    const outputMint = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
-    // const outputMint = 'ENchkhrvTGbYhgXTnZPhdbL74k1uRJrGijLeUfyuNjgD'; // Your desired token
-    const amount = 1 * 10 ** 9; // 1 SOL in lamports
+    // 'So11111111111111111111111111111111111111112'; // SOL Token
+    // 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'; // USDT Token
+    // 'ENchkhrvTGbYhgXTnZPhdbL74k1uRJrGijLeUfyuNjgD'; // My Token
 
+    const amount = a * 10 ** 9; // 1 SOL in lamports
     const result = await helius.rpc.executeJupiterSwap(
-      { inputMint, outputMint, amount},
+      { inputMint: from, outputMint: to, amount},
       owner
     );
 
@@ -46,6 +46,6 @@ export const swap = async () => {
     }
     return result
   }catch(e){
-    console.log("E : ",e)
+    console.log("Error in Swapping : ",e)
   }
 }

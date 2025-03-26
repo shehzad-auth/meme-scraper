@@ -21,9 +21,15 @@ const CreateToken: NextPage = () => {
     useWallet();
   const [textLogs, setTextLogs] = useState<string[]>([]);
   const [amount, setAmount] = useState<number>(0);
+  const [swapData, setSwapData] = useState({
+    from: "",
+    to: "",
+    amount: 0
+  })
 
-  const handleSwap = async () => {
-    console.log("swap result : ", await swap());
+  const handleSwap = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("swap result : ", await swap( swapData.from, swapData.to, swapData.amount ));
   };
 
   const log = (text: string) => {
@@ -91,56 +97,101 @@ const CreateToken: NextPage = () => {
       <WalletMultiButton
         style={{ position: "fixed", top: "15px", right: "15px" }}
       />
-      <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
-        <form className="flex justify-between items-end gap-2 w-full" onSubmit={handleInvest}>
-          <div className="flex flex-col">
-            <label className="text-sm text-gray-600">Amount</label>
-            <input
-              type="number"
-              value={amount || ""}
-              onChange={(e) => setAmount(e.target.valueAsNumber)}
-              className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-              placeholder="( SOL )"
-              required
-            />
+      <div className="flex gap-5">
+        <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
+          <form className="flex justify-between items-end gap-2 w-full" onSubmit={handleInvest}>
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600">Amount</label>
+              <input
+                type="number"
+                value={amount || ""}
+                onChange={(e) => setAmount(e.target.valueAsNumber)}
+                className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                placeholder="( SOL )"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full flex justify-center py-[10px] px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+            >
+              Invest
+            </button>
+          </form>
+          {/* <div className="flex justify-center items-center gap-4 mt-5 w-full">
+            <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
+              Token Number
+            </div>
+            <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
+              Total Users
+            </div>
+            <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
+              Total Coin
+            </div>
+          </div> */}
+          <div className="bg-black h-[30vh] w-full text-white mt-5 rounded-md p-4 overflow-auto">
+            {textLogs.length > 0 ? (
+              textLogs.map((log: any, index: any) => (
+                <div key={index} className=" border-gray-700 py-2 text-xs">
+                  {log}
+                </div>
+              ))
+            ) : (
+              <div className="text-gray-400 text-center mt-10">
+                No logs available
+              </div>
+            )}
           </div>
           <button
-            type="submit"
-            className="w-full flex justify-center py-[10px] px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+            onClick={handleInvest}
+            className="w-full flex justify-center mt-5 py-[10px] px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
           >
-            Invest
+            Withdraw
           </button>
-        </form>
-        {/* <div className="flex justify-center items-center gap-4 mt-5 w-full">
-          <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
-            Token Number
-          </div>
-          <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
-            Total Users
-          </div>
-          <div className="border-2 border-purple-700 rounded-md p-4 min-w-[130px] text-center">
-            Total Coin
-          </div>
-        </div> */}
-        <div className="bg-black h-[30vh] w-full text-white mt-5 rounded-md p-4 overflow-auto">
-          {textLogs.length > 0 ? (
-            textLogs.map((log: any, index: any) => (
-              <div key={index} className=" border-gray-700 py-2 text-xs">
-                {log}
-              </div>
-            ))
-          ) : (
-            <div className="text-gray-400 text-center mt-10">
-              No logs available
-            </div>
-          )}
         </div>
-        <button
-          onClick={handleInvest}
-          className="w-full flex justify-center mt-5 py-[10px] px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-        >
-          Withdraw
-        </button>
+        <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
+          <form className="" onSubmit={handleSwap}>
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600">From Address</label>
+              <input
+                type="text"
+                value={swapData.from || ""}
+                onChange={(e) => setSwapData(prev => ({...prev, from: e.target.value}))}
+                className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                placeholder="Address"
+                required
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600 mt-3">To Address</label>
+              <input
+                type="text"
+                value={swapData.to || ""}
+                onChange={(e) => setSwapData(prev => ({...prev, to: e.target.value}))}
+                className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                placeholder="Address"
+                required
+              />
+            </div>
+            <div className="flex flex-col ">
+              <label className="text-sm text-gray-600 mt-3">Amount</label>
+              <input
+                type="number"
+                value={swapData.amount || ""}
+                onChange={(e) => setSwapData(prev => ({...prev, amount: e.target.valueAsNumber}))}
+                className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                placeholder="( SOL )"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="mt-3 w-full flex justify-center py-[10px] px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+            >
+              Swap
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
