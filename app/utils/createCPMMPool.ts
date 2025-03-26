@@ -44,8 +44,8 @@ import { SendTransactionError } from '@solana/web3.js';
       poolFeeAccount: POOL_FEE_ACCOUNT, // devnet:  DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC
       mintA,
       mintB,
-      mintAAmount: new BN(100),
-      mintBAmount: new BN(100),
+      mintAAmount: new BN(0.01 * 10 ** 9),
+      mintBAmount: new BN(0.01 * 10 ** 9 ),
       startTime: new BN(0),
       feeConfig: feeConfigs[0],
       associatedOnly: false,

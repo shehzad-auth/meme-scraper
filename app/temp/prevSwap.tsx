@@ -10,16 +10,12 @@ const WalletMultiButton = dynamic(
   { ssr: false }
 );
 import type { NextPage } from "next";
-import { fetchRpcPoolInfo, swap } from "./actions";
+import { swap } from "./actions";
 import { createSPLToken } from "./utils/createToken";
 import { createMarket } from "./utils/createMarket";
 import { createAmmPool } from "./utils/createAMMPool";
 import { getTempWallet, transferAmount } from "./utils/functions";
 import { createPool } from "./utils/createCPMMPool";
-import { deposit } from "./utils/deposit";
-import { withdraw } from "./utils/withdraw";
-import { swapNew } from "./utils/swap";
-import { BN } from "bn.js";
 
 const CreateToken: NextPage = () => {
   const { publicKey, signAllTransactions } =
@@ -27,15 +23,14 @@ const CreateToken: NextPage = () => {
   const [textLogs, setTextLogs] = useState<string[]>([]);
   const [amount, setAmount] = useState<number>(0);
   const [swapData, setSwapData] = useState({
-    poolId: "",
-    inputAmount: 0,
-    inputMint: ""
+    from: "",
+    to: "",
+    amount: 0
   })
 
   const handleSwap = async (e: React.FormEvent) => {
     e.preventDefault();
-    // console.log("swap result : ", await swap( swapData.from, swapData.to, swapData.amount ));
-    console.log("swap result : ", await swapNew( swapData.poolId, swapData.inputAmount, swapData.inputMint, false ));
+    console.log("swap result : ", await swap( swapData.from, swapData.to, swapData.amount ));
   };
 
   const log = (text: string) => {
@@ -55,7 +50,7 @@ const CreateToken: NextPage = () => {
     // 7. after certain amount of investment, collect total amount
 
     try{
-      // 1. Create temp wallet
+      // // 1. Create temp wallet
       // log("Creating Temp Wallet...")
       // const tempWallet = await getTempWallet();
       // log(`Created Temp Wallet: ${tempWallet.publicKey}`)
@@ -85,14 +80,11 @@ const CreateToken: NextPage = () => {
       // const marketRes = await createMarket(spltoken.mint)
       // log(`Created Market: ${marketRes}`)
 
-      // // 5. create pool
-      // log("Creating Pool...")
+      // 5. create pool
+      log("Creating Pool...")
       // const res = await createPool("So11111111111111111111111111111111111111112", spltoken.mint)
-      // log(`Created Pool: ${res}`)
-
-      console.log("Deposit : ", await deposit('AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT', '0.0001'))
-      console.log("POOL : ", await fetchRpcPoolInfo('AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT'))
-      console.log("withdraw : ", await withdraw('AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT', 100))
+      const res = await createPool("So11111111111111111111111111111111111111112", "9CHnqXhgJWfXvkBsrKyHm9854NfZ6fUrHsPEYFhgZqDf")
+      log(`Created Pool: ${res}`)
 
       // const res = await createAmmPool(amount, marketRes)
       // log(`Created Pool: ${res}`)
@@ -165,35 +157,35 @@ const CreateToken: NextPage = () => {
         <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
           <form className="" onSubmit={handleSwap}>
             <div className="flex flex-col">
-              <label className="text-sm text-gray-600">poolId</label>
+              <label className="text-sm text-gray-600">From Address</label>
               <input
                 type="text"
-                value={swapData.poolId || ""}
-                onChange={(e) => setSwapData(prev => ({...prev, poolId: e.target.value}))}
+                value={swapData.from || ""}
+                onChange={(e) => setSwapData(prev => ({...prev, from: e.target.value}))}
                 className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                placeholder="Pool Id"
-                required
-              />
-            </div>
-            <div className="flex flex-col ">
-              <label className="text-sm text-gray-600 mt-3">Input Amount</label>
-              <input
-                type="number"
-                value={swapData.inputAmount || ""}
-                onChange={(e) => setSwapData(prev => ({...prev, inputAmount: e.target.valueAsNumber}))}
-                className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                placeholder="( SOL )"
+                placeholder="Address"
                 required
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-sm text-gray-600 mt-3">Input Mint</label>
+              <label className="text-sm text-gray-600 mt-3">To Address</label>
               <input
                 type="text"
-                value={swapData.inputMint || ""}
-                onChange={(e) => setSwapData(prev => ({...prev, inputMint: e.target.value}))}
+                value={swapData.to || ""}
+                onChange={(e) => setSwapData(prev => ({...prev, to: e.target.value}))}
                 className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
                 placeholder="Address"
+                required
+              />
+            </div>
+            <div className="flex flex-col ">
+              <label className="text-sm text-gray-600 mt-3">Amount</label>
+              <input
+                type="number"
+                value={swapData.amount || ""}
+                onChange={(e) => setSwapData(prev => ({...prev, amount: e.target.valueAsNumber}))}
+                className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                placeholder="( SOL )"
                 required
               />
             </div>
