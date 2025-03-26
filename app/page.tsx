@@ -15,6 +15,7 @@ import { createSPLToken } from "./utils/createToken";
 import { createMarket } from "./utils/createMarket";
 import { createAmmPool } from "./utils/createAMMPool";
 import { getTempWallet, transferAmount } from "./utils/functions";
+import { createPool } from "./utils/createCPMMPool";
 
 const CreateToken: NextPage = () => {
   const { publicKey, signAllTransactions } =
@@ -81,6 +82,9 @@ const CreateToken: NextPage = () => {
 
       // 5. create pool
       log("Creating Pool...")
+      const res = await createPool("So11111111111111111111111111111111111111112", spltoken.mint)
+      log(`Created Pool: ${res}`)
+
       // const res = await createAmmPool(amount, marketRes)
       // log(`Created Pool: ${res}`)
 
