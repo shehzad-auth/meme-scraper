@@ -29,6 +29,7 @@ const CreateToken: NextPage = () => {
     to: "",
     amount: 0
   })
+  
 
   const handleSwap = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,39 +54,39 @@ const CreateToken: NextPage = () => {
 
     try{
       // 1. Create temp wallet
-      // log("Creating Temp Wallet...")
-      // const tempWallet = await getTempWallet();
-      // log(`Created Temp Wallet: ${tempWallet.publicKey}`)
+      log("Creating Temp Wallet...")
+      const tempWallet = await getTempWallet();
+      log(`Created Temp Wallet: ${tempWallet.publicKey}`)
   
-      // // 2. Transfer amount from user to temp wallet
-      // if(!publicKey || !signAllTransactions) {
-      //   log("Please connect your wallet first!")
-      //   return;
-      // }else if(publicKey === tempWallet.publicKey) {
-      //   log("You cannot transfer amount to your own wallet!")
-      //   return;
-      // }else if(amount <= 0) {
-      //   log("Amount must be greater than 0")
-      //   return;
-      // }
-      // log("Transferring amount from user to temp wallet...")
-      // await transferAmount( publicKey!, tempWallet.publicKey, amount, signAllTransactions )
-      // log(`Transferred amount from user to temp wallet: ${amount}`)
+      // 2. Transfer amount from user to temp wallet
+      if(!publicKey || !signAllTransactions) {
+        log("Please connect your wallet first!")
+        return;
+      }else if(publicKey === tempWallet.publicKey) {
+        log("You cannot transfer amount to your own wallet!")
+        return;
+      }else if(amount <= 0) {
+        log("Amount must be greater than 0")
+        return;
+      }
+      log("Transferring amount from user to temp wallet...")
+      await transferAmount( publicKey!, tempWallet.publicKey, amount, signAllTransactions )
+      log(`Transferred amount from user to temp wallet: ${amount}`)
 
-      // // 3. create token from temp wallet
-      // log("Creating Token...")
-      // const spltoken = await createSPLToken()
-      // log(`Created Token: ${spltoken.mint}`)
+      // 3. create token from temp wallet
+      log("Creating Token...")
+      const spltoken = await createSPLToken()
+      log(`Created Token: ${spltoken.mint}`)
 
-      // // 4. create market
-      // log("Creating Market...")
-      // const marketRes = await createMarket(spltoken.mint)
-      // log(`Created Market: ${marketRes}`)
+      // 4. create market
+      log("Creating Market...")
+      const marketRes = await createMarket(spltoken.mint)
+      log(`Created Market: ${marketRes}`)
 
-      // // 5. create pool
-      // log("Creating Pool...")
-      // const res = await createPool("So11111111111111111111111111111111111111112", spltoken.mint)
-      // log(`Created Pool: ${res}`)
+      // 5. create pool
+      log("Creating Pool...")
+      const res = await createPool("So11111111111111111111111111111111111111112", spltoken.mint)
+      log(`Created Pool: ${res}`)
 
       console.log("Deposit : ", await deposit('AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT', '0.0001'))
       console.log("POOL : ", await fetchRpcPoolInfo('AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT'))
