@@ -1,14 +1,18 @@
-import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { connection, owner } from "./config";
 
 export async function getTempWallet() {
-    return owner
+  return Keypair.generate()
 }
 
 export const transferAmount = async (from: PublicKey, to: PublicKey, amount: number, signAllTransactions: any) => {
   if (!signAllTransactions) {
     alert("Please connect your wallet first!");
     return;
+  }
+  let storedTransfer = localStorage.getItem("storedTransfer");
+  if (storedTransfer) {
+    return true;
   }
 
   const transaction = new Transaction().add(
@@ -31,6 +35,7 @@ export const transferAmount = async (from: PublicKey, to: PublicKey, amount: num
     console.log(
       `Transaction sent: https://explorer.solana.com/tx/${signature}?cluster=devnet`
     );
+    localStorage.setItem("storedTransfer", JSON.stringify(true));
   } catch (error) {
     console.error("Error sending transaction:", error);
     alert(

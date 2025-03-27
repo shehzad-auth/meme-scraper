@@ -1,10 +1,10 @@
 "use server"
 import { createMint, getOrCreateAssociatedTokenAccount, mintTo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { connection, host, owner as WALLET_KEYPAIR } from "./config";
+import { connection, host } from "./config";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Metaplex } from "@metaplex-foundation/js";
 
-export async function createSPLToken() {
+export async function createSPLToken(WALLET_KEYPAIR: Keypair) {
 
   console.log("Creating a new SPL token...");
 
@@ -72,7 +72,7 @@ export async function createSPLToken() {
   };
 
   // Set the token metadata
-  await setTokenMetadata(mint, TOKEN_METADATA);
+  await setTokenMetadata(mint, WALLET_KEYPAIR, TOKEN_METADATA);
   
   return {
     mint: mint.toBase58(),
@@ -98,7 +98,7 @@ async function uploadMetadataPinata(metadata: any) {
 }
 
 // Function to Set Metadata
-async function setTokenMetadata(mint: PublicKey, tokenMetadata: { name: string, symbol: string, uri: string }) {
+async function setTokenMetadata(mint: PublicKey,WALLET_KEYPAIR: Keypair, tokenMetadata: { name: string, symbol: string, uri: string }) {
   try {
     const metaplex = Metaplex.make(connection)
       .use(keypairIdentity(WALLET_KEYPAIR));
