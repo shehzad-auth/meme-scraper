@@ -1,36 +1,44 @@
-"use server"
-import { ApiV3PoolInfoStandardItemCpmm, CpmmKeys, Percent, getPdaPoolAuthority } from '@raydium-io/raydium-sdk-v2'
-import BN from 'bn.js'
-import { connection, initSdk, txVersion } from './config'
-import Decimal from 'decimal.js'
-import { isValidCpmm } from './utils'
-import { SendTransactionError } from '@solana/web3.js'
+"use server";
+import {
+  ApiV3PoolInfoStandardItemCpmm,
+  CpmmKeys,
+  Percent,
+  getPdaPoolAuthority,
+} from "@raydium-io/raydium-sdk-v2";
+import BN from "bn.js";
+import { connection, initSdk, txVersion } from "./config";
+import Decimal from "decimal.js";
+import { isValidCpmm } from "./utils";
+import { SendTransactionError } from "@solana/web3.js";
 
 export const deposit = async (poolId: string, uiInputAmount: string) => {
-  const raydium = await initSdk()
+  const raydium = await initSdk();
 
   // SOL - USDC pool
   // const poolId = '7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny'
-  let poolInfo: ApiV3PoolInfoStandardItemCpmm
-  let poolKeys: CpmmKeys | undefined
+  let poolInfo: ApiV3PoolInfoStandardItemCpmm;
+  let poolKeys: CpmmKeys | undefined;
 
-  if (raydium.cluster === 'devnet') {
+  if (raydium.cluster === "devnet") {
     // note: api doesn't support get devnet pool info, so in devnet else we go rpc method
     // if you wish to get pool info from rpc, also can modify logic to go rpc method directly
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId)
-    poolInfo = data.poolInfo
-    poolKeys = data.poolKeys
-    console.log('poolInfo', poolInfo)
-    if (!isValidCpmm(poolInfo.programId)) throw new Error('target pool is not CPMM pool')
+    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    poolInfo = data.poolInfo;
+    poolKeys = data.poolKeys;
+    console.log("poolInfo", poolInfo);
+    if (!isValidCpmm(poolInfo.programId))
+      throw new Error("target pool is not CPMM pool");
   } else {
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId)
-    poolInfo = data.poolInfo
-    poolKeys = data.poolKeys
+    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    poolInfo = data.poolInfo;
+    poolKeys = data.poolKeys;
   }
 
-  const inputAmount = new BN(new Decimal(uiInputAmount).mul(10 ** poolInfo.mintA.decimals).toFixed(0))
-  const slippage = new Percent(1, 100) // 1%
-  const baseIn = true
+  const inputAmount = new BN(
+    new Decimal(uiInputAmount).mul(10 ** poolInfo.mintA.decimals).toFixed(0)
+  );
+  const slippage = new Percent(1, 100); // 1%
+  const baseIn = true;
 
   // computePairAmount is not necessary, addLiquidity will compute automatically,
   // just for ui display
@@ -59,34 +67,21 @@ export const deposit = async (poolId: string, uiInputAmount: string) => {
     slippage,
     baseIn,
     txVersion,
-    // optional: set up priority fee here
-    // computeBudgetConfig: {
-    //   units: 600000,
-    //   microLamports: 46591500,
-    // },
-
-    // optional: add transfer sol to tip account instruction. e.g sent tip to jito
-    // txTipConfig: {
-    //   address: new PublicKey('96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5'),
-    //   amount: new BN(10000000), // 0.01 sol
-    // },
-  })
-try{
-  const { txId } = await execute({ sendAndConfirm: true })
-  console.log('pool deposited', { txId: `https://explorer.solana.com/tx/${txId}` })
-} catch (error) {
+  });
+  try {
+    const { txId } = await execute({ sendAndConfirm: true });
+    console.log("pool deposited", {
+      txId: `https://explorer.solana.com/tx/${txId}`,
+    });
+  } catch (error) {
     if (error instanceof SendTransactionError) {
-        console.error("SendTransactionError:", await error.getLogs(connection));
-        return console.error(
+      console.error("SendTransactionError:", await error.getLogs(connection));
+      return console.error(
         "SendTransactionError:",
         await error.getLogs(connection)
-        );
+      );
     } else {
-        console.error("Error:", error);
+      console.error("Error:", error);
     }
-}
-  // process.exit() // if you don't want to end up node execution, comment this line
-}
-
-/** uncomment code below to execute */
-// deposit()
+  }
+};

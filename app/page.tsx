@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import dynamic from "next/dynamic";
 const WalletMultiButton = dynamic(
@@ -18,31 +18,132 @@ import { getTempWallet, transferAmount } from "./utils/functions";
 import { createPool } from "./utils/createCPMMPool";
 import { deposit } from "./utils/deposit";
 import { withdraw } from "./utils/withdraw";
+import { swapNew } from "./utils/swap";
+import { BN } from "bn.js";
+import { Keypair } from "@solana/web3.js";
 
 const CreateToken: NextPage = () => {
-  const { publicKey, signAllTransactions } =
-    useWallet();
+  const { publicKey, signAllTransactions } = useWallet();
   const [textLogs, setTextLogs] = useState<string[]>([]);
   const [amount, setAmount] = useState<number>(0);
   const [swapData, setSwapData] = useState({
-    from: "",
-    to: "",
-    amount: 0
-  })
-  
+    poolId: "",
+    inputAmount: 0,
+    inputMint: "",
+  });
 
   const handleSwap = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("swap result : ", await swap( swapData.from, swapData.to, swapData.amount ));
+    // console.log("swap result : ", await swap( swapData.from, swapData.to, swapData.amount ));
+    console.log(
+      "swap result : ",
+      await swapNew(
+        swapData.poolId,
+        swapData.inputAmount,
+        swapData.inputMint,
+        false
+      )
+    );
   };
 
   const log = (text: string) => {
     setTextLogs((prev) => [...prev, text]);
     console.log(text);
-  }
+  };
 
-  const handleInvest = async (e: React.FormEvent) => {
+  const investmentLogAndLocalStorage = async (
+    key: string,
+    options: any = {}
+  ) => {
+    switch (key) {
+      case "tempWallet":
+        log("Creating Temp Wallet...");
+        let storedWallet = localStorage.getItem("tempWallet");
+        if (storedWallet) {
+          const secretKey = Uint8Array.from(JSON.parse(storedWallet));
+          const tempWallet = Keypair.fromSecretKey(secretKey);
+          log(`Created Temp Wallet: ${tempWallet.publicKey}`);
+          return tempWallet;
+        }
+        const tempWallet = await getTempWallet();
+        localStorage.setItem(
+          "tempWallet",
+          JSON.stringify(Array.from(tempWallet.secretKey))
+        );
+        log(`Created Temp Wallet: ${tempWallet.publicKey}`);
+        return tempWallet;
+
+      case "transferAmount":
+        log("Transferring amount from user to temp wallet...");
+        let storedTransferAmount = localStorage.getItem("transferAmount");
+        if (!storedTransferAmount) {
+          await transferAmount(
+            publicKey!,
+            options.tempWallet.publicKey,
+            options.amount,
+            signAllTransactions
+          );
+          localStorage.setItem(
+            "transferAmount",
+            JSON.stringify(options.amount)
+          );
+        }
+        log(`Transferred amount from user to temp wallet: ${options.amount}`);
+        return true;
+
+      case "spltoken":
+        log("Creating Token...");
+        const storedSpltoken = localStorage.getItem("storedSpltoken");
+        const spltoken = storedSpltoken
+          ? JSON.parse(storedSpltoken)
+          : await createSPLToken(options.tempWallet);
+        log(`Created Token: ${spltoken.mint}`);
+        localStorage.setItem("storedSpltoken", JSON.stringify(spltoken));
+        return spltoken;
+
+      case "marketRes":
+        log("Creating Market...");
+        const storedMarketRes = localStorage.getItem("marketRes");
+        const marketRes =
+          storedMarketRes != null
+            ? JSON.parse(storedMarketRes)
+            : await createMarket(options.spltoken.mint);
+        log(`Created Market: ${marketRes}`);
+        localStorage.setItem("marketRes", JSON.stringify(marketRes));
+        return marketRes;
+
+      case "createPool":
+        log("Creating Pool...");
+        const storedCreatePool = localStorage.getItem("createPool");
+        const res = storedCreatePool != null
+          ? JSON.parse(storedCreatePool)
+          : await createPool(
+            "So11111111111111111111111111111111111111112",
+            options.spltoken.mint
+          );
+        log(`Created Pool: ${res}`);
+        localStorage.setItem("createPool", JSON.stringify(res));
+        return res;
+
+      case "deposit":
+        log("Depositing Amount...");
+        const storedDeposit = localStorage.getItem("deposit");
+        if(!storedDeposit){
+          await deposit(options.pool, options.amount)
+          localStorage.setItem("deposit", JSON.stringify(options.amount));
+        }
+        log("Amount Deposited");
+        return true;
+
+      default:
+        break;
+    }
+  };
+
+  const handleInvest = async (e: any, amount: number) => {
     e.preventDefault();
+    localStorage.setItem("investment", JSON.stringify(amount));
+
     // Steps
     // 1. Create temp wallet
     // 2. Transfer amount from user to temp wallet
@@ -52,56 +153,79 @@ const CreateToken: NextPage = () => {
     // 6. check investment in pool using helius webhook
     // 7. after certain amount of investment, collect total amount
 
-    try{
+    try {
       // 1. Create temp wallet
-      log("Creating Temp Wallet...")
-      const tempWallet = await getTempWallet();
-      log(`Created Temp Wallet: ${tempWallet.publicKey}`)
-  
+      const tempWallet = await investmentLogAndLocalStorage("tempWallet");
+
       // 2. Transfer amount from user to temp wallet
-      if(!publicKey || !signAllTransactions) {
-        log("Please connect your wallet first!")
+      if (!publicKey || !signAllTransactions) {
+        log("Please connect your wallet first!");
         return;
-      }else if(publicKey === tempWallet.publicKey) {
-        log("You cannot transfer amount to your own wallet!")
+      } else if (publicKey === tempWallet!.publicKey) {
+        log("You cannot transfer amount to your own wallet!");
         return;
-      }else if(amount <= 0) {
-        log("Amount must be greater than 0")
+      } else if (amount <= 0) {
+        log("Amount must be greater than 0");
         return;
       }
-      log("Transferring amount from user to temp wallet...")
-      await transferAmount( publicKey!, tempWallet.publicKey, amount, signAllTransactions )
-      log(`Transferred amount from user to temp wallet: ${amount}`)
+      await investmentLogAndLocalStorage("transferAmount", {
+        tempWallet,
+        amount,
+      });
 
       // 3. create token from temp wallet
-      log("Creating Token...")
-      const spltoken = await createSPLToken()
-      log(`Created Token: ${spltoken.mint}`)
+      const spltoken = await investmentLogAndLocalStorage("spltoken", {
+        tempWallet
+      });
 
-      // 4. create market
-      log("Creating Market...")
-      const marketRes = await createMarket(spltoken.mint)
-      log(`Created Market: ${marketRes}`)
+      // // 4. create market
+      // const marketRes = await investmentLogAndLocalStorage("marketRes", {
+      //   spltoken,
+      // });
 
       // 5. create pool
-      log("Creating Pool...")
-      const res = await createPool("So11111111111111111111111111111111111111112", spltoken.mint)
-      log(`Created Pool: ${res}`)
+      const pool = await investmentLogAndLocalStorage("createPool", {
+        spltoken
+      });
 
-      console.log("Deposit : ", await deposit('AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT', '0.0001'))
-      console.log("POOL : ", await fetchRpcPoolInfo('AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT'))
-      console.log("withdraw : ", await withdraw('AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT', 100))
+      // 6. Deposit amount
+      await investmentLogAndLocalStorage("deposit",{amount, pool});
+      // console.log(
+      //   "Deposit : ",
+      //   await deposit("AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT", "0.0001")
+      // );
+      // console.log(
+      //   "POOL : ",
+      //   await fetchRpcPoolInfo("AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT")
+      // );
+      // console.log(
+      //   "withdraw : ",
+      //   await withdraw("AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT", 100)
+      // );
 
       // const res = await createAmmPool(amount, marketRes)
       // log(`Created Pool: ${res}`)
 
       // 6. check investment in pool using helius webhook
       // 7. after certain amount of investment, collect total amount
-
-    }catch(e){
-      log(`Error : ${e}`)
+    } catch (e) {
+      log(`Error : ${e}`);
     }
   };
+
+  useEffect(() => {
+    if (localStorage !== undefined) {
+      let investment: string | number | null =
+        localStorage.getItem("investment");
+      if (investment) {
+        investment = parseInt(JSON.parse(investment));
+        setAmount(investment);
+        handleInvest({ preventDefault: () => {} }, investment);
+      } else {
+        // localStorage.clear();
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 py-2 flex flex-col justify-center items-center">
@@ -110,7 +234,10 @@ const CreateToken: NextPage = () => {
       />
       <div className="flex gap-5">
         <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
-          <form className="flex justify-between items-end gap-2 w-full" onSubmit={handleInvest}>
+          <form
+            className="flex justify-between items-end gap-2 w-full"
+            onSubmit={(e) => handleInvest(e, amount)}
+          >
             <div className="flex flex-col">
               <label className="text-sm text-gray-600">Amount</label>
               <input
@@ -153,45 +280,57 @@ const CreateToken: NextPage = () => {
               </div>
             )}
           </div>
-          <button
+          {/* <button
             onClick={handleInvest}
             className="w-full flex justify-center mt-5 py-[10px] px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
           >
             Withdraw
-          </button>
+          </button> */}
         </div>
         <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
           <form className="" onSubmit={handleSwap}>
             <div className="flex flex-col">
-              <label className="text-sm text-gray-600">From Address</label>
+              <label className="text-sm text-gray-600">poolId</label>
               <input
                 type="text"
-                value={swapData.from || ""}
-                onChange={(e) => setSwapData(prev => ({...prev, from: e.target.value}))}
+                value={swapData.poolId || ""}
+                onChange={(e) =>
+                  setSwapData((prev) => ({ ...prev, poolId: e.target.value }))
+                }
                 className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                placeholder="Address"
-                required
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-sm text-gray-600 mt-3">To Address</label>
-              <input
-                type="text"
-                value={swapData.to || ""}
-                onChange={(e) => setSwapData(prev => ({...prev, to: e.target.value}))}
-                className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
-                placeholder="Address"
+                placeholder="Pool Id"
                 required
               />
             </div>
             <div className="flex flex-col ">
-              <label className="text-sm text-gray-600 mt-3">Amount</label>
+              <label className="text-sm text-gray-600 mt-3">Input Amount</label>
               <input
                 type="number"
-                value={swapData.amount || ""}
-                onChange={(e) => setSwapData(prev => ({...prev, amount: e.target.valueAsNumber}))}
+                value={swapData.inputAmount || ""}
+                onChange={(e) =>
+                  setSwapData((prev) => ({
+                    ...prev,
+                    inputAmount: e.target.valueAsNumber,
+                  }))
+                }
                 className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
                 placeholder="( SOL )"
+                required
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600 mt-3">Input Mint</label>
+              <input
+                type="text"
+                value={swapData.inputMint || ""}
+                onChange={(e) =>
+                  setSwapData((prev) => ({
+                    ...prev,
+                    inputMint: e.target.value,
+                  }))
+                }
+                className="px-4 py-2 border focus:ring-purple-500 focus:border-purple-500 rounded-md"
+                placeholder="Address"
                 required
               />
             </div>
