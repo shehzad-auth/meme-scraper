@@ -1,19 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-    try {
-        const event = await req.json(); // Parse JSON body
-        console.log("🔔 Webhook received:", JSON.stringify(event, null, 2));
+  try {
+    const eventList = await req.json(); // Parse JSON body
+    // console.log("🔔 Webhook received:", JSON.stringify(eventList, null, 2));
 
-        // Check if the event is a deposit (investment in the pool)
-        if (event.type === "DEPOSIT") {
-            console.log("✅ Investment detected in pool:", event);
-            // Here, you can update state or perform any necessary action
+    // Loop through each event
+    for (const event of eventList) {
+      console.log("Processing event:");
+
+      // Check if this looks like a swap event
+      const tokenTransfers = event.tokenTransfers || [];
+      if (tokenTransfers.length >= 2) {
+        const uniqueMints = new Set(
+          tokenTransfers.map((transfer: any) => transfer.mint)
+        );
+
+        if (uniqueMints.size > 1) {
+          console.log("✅ Swap detected");
+          // Here, you can update state or perform any necessary action
         }
-
-        return NextResponse.json({ message: "Webhook received" }, { status: 200 });
-    } catch (error) {
-        console.error("❌ Error handling webhook:", error);
-        return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+      }
     }
+
+    return NextResponse.json({ message: "Webhook received" }, { status: 200 });
+  } catch (error) {
+    console.error("❌ Error handling webhook:", error);
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }

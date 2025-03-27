@@ -41,7 +41,7 @@ const CreateToken: NextPage = () => {
         swapData.poolId,
         swapData.inputAmount,
         swapData.inputMint,
-        false
+        true
       )
     );
   };

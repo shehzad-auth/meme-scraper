@@ -9,6 +9,10 @@ import BN from "bn.js";
 import { isValidCpmm } from "./util";
 import { connection, initSdk } from "./config";
 import { SendTransactionError } from "@solana/web3.js";
+import { createSwapWebhook } from "./createSwapWebhook";
+// import { createSwapWebhook } from "./createSwapWebhook";
+
+
 
 export const swapNew = async (
   poolId: string,
@@ -40,11 +44,11 @@ export const swapNew = async (
   }
 
 
-  if (
-    inputMint !== poolInfo.mintA.address &&
-    inputMint !== poolInfo.mintB.address
-  )
-    throw new Error("input mint does not match pool");
+  // if (
+  //   inputMint !== poolInfo.mintA.address &&
+  //   inputMint !== poolInfo.mintB.address
+  // )
+  //   throw new Error("input mint does not match pool");
 
   const swapResult = CurveCalculator.swap(
     inputAmount,
@@ -76,6 +80,26 @@ try {
       txId: `https://explorer.solana.com/tx/${txId}`,
     }
   );
+
+   // 🔥 Call your webhook after a successful swap
+  //  await fetch("https://sixty-points-turn.loca.lt/api/swap-webhook", {
+  //   method: "POST",
+  //   headers: { "Content-Type": "application/json" },
+  //   body: JSON.stringify({
+  //     type: "swap",
+  //     transactionId: txId,
+  //     poolId,
+  //     inputMint,
+  //     baseIn,
+  //     inputAmount: inputAmount.toString(),
+  //     outputAmount: swapResult.destinationAmountSwapped.toString(),
+  //     tradeFee: swapResult.tradeFee.toString(),
+  //     explorerUrl: `https://explorer.solana.com/tx/${txId}`,
+  //   }),
+  // });
+
+  // console.log("pool onformation: ", poolInfo);
+  // createSwapWebhook(poolInfo.mintA.address, poolInfo.mintB.address );
 } catch (error) {
   if (error instanceof SendTransactionError) {
       console.error("SendTransactionError:", await error.getLogs(connection));
