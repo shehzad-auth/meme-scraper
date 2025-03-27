@@ -4,8 +4,9 @@ import { connection, host } from "./config";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Metaplex } from "@metaplex-foundation/js";
 
-export async function createSPLToken(WALLET_KEYPAIR: Keypair) {
-
+export async function createSPLToken(WALLET: string) {
+  const secretKey = Uint8Array.from(JSON.parse(WALLET));
+  const WALLET_KEYPAIR = Keypair.fromSecretKey(secretKey);
   console.log("Creating a new SPL token...");
 
   // ✅ Create Mint (Token)
