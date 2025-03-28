@@ -21,6 +21,8 @@ import { withdraw } from "./utils/withdraw";
 import { swapNew } from "./utils/swap";
 import { BN } from "bn.js";
 import { Keypair } from "@solana/web3.js";
+import io from 'socket.io-client'
+let socket :any;
 
 const CreateToken: NextPage = () => {
   const { publicKey, signAllTransactions } = useWallet();
@@ -227,6 +229,35 @@ const CreateToken: NextPage = () => {
     }
   }, []);
 
+  const [messages, setMessages] = useState<string[]>([]);
+
+  useEffect(() => {
+    socketInitializer();
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, []);
+
+  const socketInitializer = async () => {
+    await fetch("/api/socket"); // Ensure server is initialized
+    socket = io({ path: "/api/socket" });
+
+    socket.on("connect", () => {
+      console.log("✅ Connected:", socket.id);
+    });
+
+    socket.on("message", (data: string) => {
+      console.log("📩 New message:", data);
+      setMessages((prev) => [...prev, data]);
+    });
+  };
+
+  const sendMessage = () => {
+    socket.emit("message", `Hello from ${socket.id}`);
+  };
+  
+
   return (
     <div className="min-h-screen bg-gray-100 py-2 flex flex-col justify-center items-center">
       <WalletMultiButton
@@ -343,6 +374,16 @@ const CreateToken: NextPage = () => {
           </form>
         </div>
       </div>
+
+      <div>
+      <h1>🔌 WebSocket Chat</h1>
+      <button onClick={sendMessage} className="p-3 border-2 border-black">Send Message</button>
+      <ul>
+        {messages.map((msg, i) => (
+          <li key={i}>{msg}</li>
+        ))}
+      </ul>
+    </div>
     </div>
   );
 };
