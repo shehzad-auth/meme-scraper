@@ -10,7 +10,7 @@ const WalletMultiButton = dynamic(
   { ssr: false }
 );
 import type { NextPage } from "next";
-import { fetchRpcPoolInfo, swap } from "./actions";
+import { fetchBalance, fetchRpcPoolInfo, swap } from "./actions";
 import { createSPLToken } from "./utils/createToken";
 import { createMarket } from "./utils/createMarket";
 import { createAmmPool } from "./utils/createAMMPool";
@@ -20,13 +20,15 @@ import { deposit } from "./utils/deposit";
 import { withdraw } from "./utils/withdraw";
 import { swapNew } from "./utils/swap";
 import { BN } from "bn.js";
-import { Keypair } from "@solana/web3.js";
 import io from 'socket.io-client'
 let socket :any;
+import { Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction } from "@solana/web3.js";
+import { connection, owner } from "./utils/config";
 
 const CreateToken: NextPage = () => {
   const { publicKey, signAllTransactions } = useWallet();
   const [textLogs, setTextLogs] = useState<string[]>([]);
+  const [amountLogs, setAmountLogs] = useState<string[]>([]);
   const [amount, setAmount] = useState<number>(0);
   const [swapData, setSwapData] = useState({
     poolId: "",
@@ -59,48 +61,80 @@ const CreateToken: NextPage = () => {
   ) => {
     switch (key) {
       case "tempWallet":
+        return owner;
         log("Creating Temp Wallet...");
         let storedWallet = localStorage.getItem("tempWallet");
         if (storedWallet) {
-          const secretKey = Uint8Array.from(JSON.parse(storedWallet));
+          const secretKey = Uint8Array.from(JSON.parse(storedWallet!));
           const tempWallet = Keypair.fromSecretKey(secretKey);
           log(`Created Temp Wallet: ${tempWallet.publicKey}`);
           return tempWallet;
+        } else {
+          const tempWallet = await getTempWallet();
+          localStorage.setItem(
+            "tempWallet",
+            JSON.stringify(Array.from(tempWallet.secretKey))
+          );
+          log(`Created Temp Wallet: ${tempWallet.publicKey}`);
+          const walletAmount = await fetchBalance(
+            tempWallet.publicKey.toBase58()
+          );
+          setAmountLogs((prev) => [
+            ...prev,
+            `Wallet amount after creation : ${walletAmount} SOL`,
+          ]);
+          return tempWallet;
         }
-        const tempWallet = await getTempWallet();
-        localStorage.setItem(
-          "tempWallet",
-          JSON.stringify(Array.from(tempWallet.secretKey))
-        );
-        log(`Created Temp Wallet: ${tempWallet.publicKey}`);
-        return tempWallet;
 
       case "transferAmount":
         log("Transferring amount from user to temp wallet...");
         let storedTransferAmount = localStorage.getItem("transferAmount");
         if (!storedTransferAmount) {
-          await transferAmount(
-            publicKey!,
-            options.tempWallet.publicKey,
-            options.amount,
-            signAllTransactions
-          );
-          localStorage.setItem(
-            "transferAmount",
-            JSON.stringify(options.amount)
-          );
+          try {
+            await transferAmount(
+              publicKey!,
+              options.tempWallet.publicKey,
+              options.amount,
+              signAllTransactions
+            );
+            localStorage.setItem(
+              "transferAmount",
+              JSON.stringify(options.amount)
+            );
+            const walletAmount = await fetchBalance(
+              options.tempWallet.publicKey.toBase58()
+            );
+            setAmountLogs((prev) => [
+              ...prev,
+              `Wallet amount after Transfer : ${walletAmount} SOL`,
+            ]);
+            log(
+              `Transferred amount from user to temp wallet: ${options.amount}`
+            );
+            return true;
+          } catch (e) {
+            log(`Transferred Error: ${e}`);
+            return false;
+          }
+        }else{
+          return true;
         }
-        log(`Transferred amount from user to temp wallet: ${options.amount}`);
-        return true;
 
       case "spltoken":
         log("Creating Token...");
         const storedSpltoken = localStorage.getItem("storedSpltoken");
         const spltoken = storedSpltoken
           ? JSON.parse(storedSpltoken)
-          : await createSPLToken(options.tempWallet);
+          : await createSPLToken(JSON.stringify(Array.from(options.tempWallet.secretKey)))
         log(`Created Token: ${spltoken.mint}`);
         localStorage.setItem("storedSpltoken", JSON.stringify(spltoken));
+        const walletAmount = await fetchBalance(
+          options.tempWallet.publicKey.toBase58()
+        );
+        setAmountLogs((prev) => [
+          ...prev,
+          `Wallet amount after Token Creation : ${walletAmount} SOL`,
+        ]);
         return spltoken;
 
       case "marketRes":
@@ -117,22 +151,41 @@ const CreateToken: NextPage = () => {
       case "createPool":
         log("Creating Pool...");
         const storedCreatePool = localStorage.getItem("createPool");
-        const res = storedCreatePool != null
-          ? JSON.parse(storedCreatePool)
-          : await createPool(
-            "So11111111111111111111111111111111111111112",
-            options.spltoken.mint
-          );
-        log(`Created Pool: ${res}`);
+        const res =
+          storedCreatePool != null
+            ? JSON.parse(storedCreatePool)
+            : await createPool(
+                "So11111111111111111111111111111111111111112",
+                options.spltoken.mint
+              );
+        console.log("res : ",res)
+        console.log("res : ",Object.keys(res))
+        log(`Created Pool: ${res.poolKeys.poolId}`);
         localStorage.setItem("createPool", JSON.stringify(res));
+        if (true) {
+          const walletAmount = await fetchBalance(
+            options.tempWallet.publicKey.toBase58()
+          );
+          setAmountLogs((prev) => [
+            ...prev,
+            `Wallet amount after Pool Creation : ${walletAmount} SOL`,
+          ]);
+        }
         return res;
 
       case "deposit":
         log("Depositing Amount...");
         const storedDeposit = localStorage.getItem("deposit");
-        if(!storedDeposit){
-          await deposit(options.pool, options.amount)
+        if (!storedDeposit) {
+          await deposit(options.pool.poolKeys.poolId, options.amount);
           localStorage.setItem("deposit", JSON.stringify(options.amount));
+          const walletAmount = await fetchBalance(
+            options.tempWallet.publicKey.toBase58()
+          );
+          setAmountLogs((prev) => [
+            ...prev,
+            `Wallet amount after Deposit : ${walletAmount} SOL`,
+          ]);
         }
         log("Amount Deposited");
         return true;
@@ -158,6 +211,19 @@ const CreateToken: NextPage = () => {
     try {
       // 1. Create temp wallet
       const tempWallet = await investmentLogAndLocalStorage("tempWallet");
+      // 2. Transfer amount from user to temp wallet
+      // log("Transferring amount from user to temp wallet...");
+      // const transferAmountTx = new Transaction().add(
+      //   SystemProgram.transfer({
+      //     fromPubkey: tempWallet!.publicKey ,
+      //     toPubkey: publicKey!,
+      //     lamports: 7.9 * LAMPORTS_PER_SOL,
+      //   })
+      // );
+      // const transferAmountSignature = await connection.sendTransaction(
+      //   transferAmountTx,
+      //   [tempWallet!]
+      // );
 
       // 2. Transfer amount from user to temp wallet
       if (!publicKey || !signAllTransactions) {
@@ -170,14 +236,17 @@ const CreateToken: NextPage = () => {
         log("Amount must be greater than 0");
         return;
       }
-      await investmentLogAndLocalStorage("transferAmount", {
+      const transferred = await investmentLogAndLocalStorage("transferAmount", {
         tempWallet,
         amount,
       });
+      if(!transferred){
+        return
+      }
 
       // 3. create token from temp wallet
       const spltoken = await investmentLogAndLocalStorage("spltoken", {
-        tempWallet
+        tempWallet,
       });
 
       // // 4. create market
@@ -187,11 +256,16 @@ const CreateToken: NextPage = () => {
 
       // 5. create pool
       const pool = await investmentLogAndLocalStorage("createPool", {
-        spltoken
+        spltoken,
+        tempWallet,
       });
 
       // 6. Deposit amount
-      await investmentLogAndLocalStorage("deposit",{amount, pool});
+      await investmentLogAndLocalStorage("deposit", {
+        amount,
+        pool,
+        tempWallet,
+      });
       // console.log(
       //   "Deposit : ",
       //   await deposit("AgWuDqwncV3AUvtNmwd6dUYZeBnTvfCzV9mubby1X3xT", "0.0001")
@@ -227,7 +301,7 @@ const CreateToken: NextPage = () => {
         // localStorage.clear();
       }
     }
-  }, []);
+  }, [signAllTransactions]);
 
   const [messages, setMessages] = useState<string[]>([]);
 
@@ -264,7 +338,7 @@ const CreateToken: NextPage = () => {
         style={{ position: "fixed", top: "15px", right: "15px" }}
       />
       <div className="flex gap-5">
-        <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
+        <div className="max-w-[900px] p-10 bg-white shadow-lg rounded-2xl">
           <form
             className="flex justify-between items-end gap-2 w-full"
             onSubmit={(e) => handleInvest(e, amount)}
@@ -298,18 +372,33 @@ const CreateToken: NextPage = () => {
               Total Coin
             </div>
           </div> */}
-          <div className="bg-black h-[30vh] w-full text-white mt-5 rounded-md p-4 overflow-auto">
-            {textLogs.length > 0 ? (
-              textLogs.map((log: any, index: any) => (
-                <div key={index} className=" border-gray-700 py-2 text-xs">
-                  {log}
+          <div className="flex gap-4">
+            <div className="bg-black h-[30vh] w-full text-white mt-5 rounded-md p-4 overflow-auto">
+              {textLogs.length > 0 ? (
+                textLogs.map((log: any, index: any) => (
+                  <div key={index} className=" border-gray-700 py-2 text-xs">
+                    {log}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-400 text-center mt-10">
+                  No logs available
                 </div>
-              ))
-            ) : (
-              <div className="text-gray-400 text-center mt-10">
-                No logs available
-              </div>
-            )}
+              )}
+            </div>
+            <div className="bg-black h-[30vh] w-full text-white mt-5 rounded-md p-4 overflow-auto">
+              {amountLogs.length > 0 ? (
+                amountLogs.map((log: any, index: any) => (
+                  <div key={index} className=" border-gray-700 py-2 text-xs">
+                    {log}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-400 text-center mt-10">
+                  No logs available
+                </div>
+              )}
+            </div>
           </div>
           {/* <button
             onClick={handleInvest}
@@ -318,7 +407,7 @@ const CreateToken: NextPage = () => {
             Withdraw
           </button> */}
         </div>
-        <div className="max-w-[600px] p-10 bg-white shadow-lg rounded-2xl">
+        <div className="max-w-[300px] p-10 bg-white shadow-lg rounded-2xl">
           <form className="" onSubmit={handleSwap}>
             <div className="flex flex-col">
               <label className="text-sm text-gray-600">poolId</label>

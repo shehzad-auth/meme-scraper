@@ -54,7 +54,7 @@ export const createPool = async (mintAAddr: any, mintBAddr: any) => {
     mintA,
     mintB,
     mintAAmount: new BN(0.01 * 10 ** 9),
-    mintBAmount: new BN(0.01 * 10 ** 9),
+    mintBAmount: new BN(100000 * 10 ** 9),
     startTime: new BN(0),
     feeConfig: feeConfigs[0],
     associatedOnly: false,
